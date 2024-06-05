@@ -1,24 +1,51 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import './App.scss';
+import Sidebar from './components/sidebar/Sidebar';
+import Chat from './components/chat/Chat';
+import Login from './components/login/Login';
+import { useAppDispatch, useAppSelector } from './app/hooks';
+import { useEffect } from 'react';
+import { auth } from './firebase';
+import { login, logout } from './features/userSlice';
+
+import { ErrorBoundary } from 'react-error-boundary';
+import { Fallback } from './utils/ErrorFallback';
 
 function App() {
+  const user = useAppSelector((state) => state.user.user);
+  // console.log(user);
+
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    //AuthでのLoginを検知してuserのstateをRedux経由で変更する
+    auth.onAuthStateChanged((loginUser) => {
+      if (loginUser) {
+        dispatch(
+          login({
+            uid: loginUser.uid,
+            photo: loginUser.photoURL,
+            email: loginUser.email,
+            displayName: loginUser.displayName,
+          })
+        );
+        console.log('Login');
+      } else {
+        dispatch(logout());
+        console.log('Logout');
+      }
+    });
+  }, [dispatch]);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {user ? (
+        <>
+          <Sidebar />
+          <Chat />
+        </>
+      ) : (
+        <Login />
+      )}
     </div>
   );
 }
